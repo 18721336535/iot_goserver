@@ -1,0 +1,56 @@
+# Docker Compose file Reference (https://docs.docker.com/compose/compose-file/)
+
+version: '3'
+
+# Define services
+services:
+  # Redis Service   
+  redis:
+    image: redis/redis-stack-server # Use a public Redis image to build the redis service    
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - /var/redis/data:/data
+      - /etc/redis/conf/redis.conf:/etc/redis/redis.conf
+      - /var/redis/logs:/logs
+    networks:
+      - backend
+    command: redis-server /etc/redis/redis.conf
+  mysql:
+    # We use a mariadb image which supports both amd64 & arm64 architecture
+    image: mariadb
+    # If you really want to use MySQL, uncomment the following line
+    #image: mysql:8
+    # command: '--default-authentication-plugin=mysql_native_password'
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    # healthcheck:
+    #   test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 --password="$$(cat /run/secrets/db-password)" --silent']
+    #   interval: 3s
+    #   retries: 5
+    #   start_period: 30s
+    volumes:
+      - /var/mysql/data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MYSQL_DATABASE: goweb_db
+      MYSQL_USER: goweb
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_root_password
+      - db_password
+    networks:
+    - backend
+networks:
+  backend:    
+
+volumes:
+  db-data:
+
+secrets:
+  db_password:
+    file: /root/dbpasswords/mysqlpassword.txt
+  db_root_password:
+    file: /root/dbpasswords/mysqlpassword.txt

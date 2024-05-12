@@ -1,0 +1,82 @@
+# Docker Compose file Reference (https://docs.docker.com/compose/compose-file/)
+
+version: '3'
+
+# Define services
+services:
+
+    # App Service
+  app:
+    # Configuration for building the docker image for the service
+    build:
+      context: . # Use an image built from the specified dockerfile in the current directory.
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080" # Forward the exposed port 8080 on the container to port 8080 on the host machine
+    restart: unless-stopped
+    depends_on: 
+      - redis # This service depends on redis. Start that first.
+      - mysql
+    environment: # Pass environment variables to the service
+      REDIS_URL: redis:6379    
+    networks: # Networks to join (Services on the same network can communicate with each other using their name)
+      - backend
+  # Redis Service   
+  redis:
+    image: redis/redis-stack-server # Use a public Redis image to build the redis service    
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - /var/redis/data:/data
+      - /etc/redis/conf/redis.conf:/etc/redis/redis.conf
+      - /var/redis/logs:/logs
+    networks:
+      - backend
+    command: redis-server /etc/redis/redis.conf
+  mysql:
+    # We use a mariadb image which supports both amd64 & arm64 architecture
+    image: mariadb
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    volumes:
+      - /var/mysql/data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MYSQL_DATABASE: goweb_db
+      MYSQL_USER: goweb
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_root_password
+      - db_password
+    networks:
+    - backend
+  prometheus:
+    image: prom/prometheus
+    restart: unless-stopped
+    user: root
+    volumes:
+      - "/etc/prometheus/:/etc/prometheus/"
+      - "/var/prometheus/prometheus_data:/prometheus"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9090:9090"
+    networks:
+      - backend
+networks:
+  backend:    
+
+volumes:
+  db-data:
+
+secrets:
+  db_password:
+    file: /root/dbpasswords/mysqlpassword.txt
+  db_root_password:
+    file: /root/dbpasswords/mysqlpassword.txt

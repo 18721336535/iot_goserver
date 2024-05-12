@@ -1,0 +1,11 @@
+[root@192 bluebell_backend]# docker run -it manual_commweb:1.0
+
+redisOptions info: {tcp 127.0.0.1:6379 0x9c9ec0 <nil>  0 0 8ms 512ms 5s 3s 3s 100 0 0s 4s 5m0s 1m0s false <nil>}
+panic: dial tcp 127.0.0.1:6379: connect: connection refused
+
+goroutine 1 [running]:
+github.com/miaogu-go/bluebell/dao/redis.Init(0xc0004a0b40)
+	/app/dao/redis/redis.go:26 +0x234
+main.main()
+	/app/main.go:62 +0x8f
+[root@192 bluebell_backend]# 
